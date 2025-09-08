@@ -81,40 +81,40 @@ Or for a specific campaign:
 
 ## 📂 Folder Structure
 
-md-flash-sale-pro/
-├── assets/ # CSS, JS, images
-├── includes/ # Core plugin functions
-├── templates/ # Frontend templates
-├── flash-sale-cpt.php # CPT registration
-├── flash-sale-slots.php# Slot management
-├── readme.md # Documentation
+- md-flash-sale-pro/
+- ├── assets/ # CSS, JS, images
+- ├── includes/ # Core plugin functions
+- ├── templates/ # Frontend templates
+- ├── flash-sale-cpt.php # CPT registration
+- ├── flash-sale-slots.php# Slot management
+- ├── readme.md # Documentation
 
 ## 🖼 Screenshots
 
 (Add your images here, e.g. assets/screenshot-1.png)
 
-Admin Campaign Setup – Create campaigns and manage slots.
+- Admin Campaign Setup – Create campaigns and manage slots.
 
-Product Selection – Search by SKU or product title.
+- Product Selection – Search by SKU or product title.
 
-Frontend Display – Shopee-style tabbed flash sale layout with countdown.
+- Frontend Display – Shopee-style tabbed flash sale layout with countdown.
 
-⚡ Technical Notes
+## ⚡ Technical Notes
 
-Built on WordPress CPT & WooCommerce hooks.
+- Built on WordPress CPT & WooCommerce hooks.
 
-Uses WP AJAX + Select2 for smooth product search.
+- Uses WP AJAX + Select2 for smooth product search.
 
-Fully responsive with modern frontend templates.
+- Fully responsive with modern frontend templates.
 
-Compatible with WordPress 6+ and WooCommerce 7+.
+- Compatible with WordPress 6+ and WooCommerce 7+.
 
-📜 License
+## 📜 License
 
 This plugin is distributed under the GPLv2 or later license.
 See the LICENSE
 file for details.
 
-💡 Author
+## 💡 Author
 
 Developed by trangc0der Minh Bee Trading Service Co., Ltd
