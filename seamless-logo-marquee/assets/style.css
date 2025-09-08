@@ -1,0 +1,103 @@
+.marquee-container {
+  margin-block: 32px;
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: white;
+}
+
+.marquee-mask-left {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 128px;
+  background: linear-gradient(to right, white 0%, white 40%, transparent 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.marquee-mask-right {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 128px;
+  background: linear-gradient(to left, white 0%, white 40%, transparent 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.marquee-track {
+  display: flex;
+  width: fit-content;
+}
+
+.logo-slide {
+  display: flex;
+  gap: 120px;
+  padding: 48px 50px;
+  align-items: center;
+}
+
+.logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logo-wrapper img {
+  height: 40px; /* Tăng chiều cao một chút cho đẹp hơn */
+  max-width: 160px;
+  object-fit: contain;
+}
+
+@media(max-width: 760px) {
+  .logo-wrapper img {
+    height: 28px;
+  }
+
+  .logo-slide {
+    gap: 90px;
+    padding: 24px 32px;
+  }
+}
+.layout--container {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.layout--full-width {
+  max-width: 100%;
+}
+.hover--scale .logo-wrapper img {
+  transition: transform 0.3s ease;
+}
+.hover--scale .logo-wrapper:hover img {
+  transform: scale(1.15);
+}
+/* Thêm vào cuối file style.css */
+
+.magnifying-glass-zone {
+    position: absolute;
+    /* Định vị chính giữa slider */
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    
+    width: 200px; /* Chiều rộng của vùng kính lúp */
+    height: 100%;
+    
+    /* Tùy chọn: Thêm hiệu ứng viền hoặc nền để dễ hình dung */
+    /* border-left: 1px dashed #ccc; */
+    /* border-right: 1px dashed #ccc; */
+    
+    z-index: 1; /* Nằm dưới lớp phủ mờ */
+}
+
+/* Đảm bảo logo có transition mượt mà */
+.logo-wrapper {
+    transition: transform 0.2s ease-out;
+}
