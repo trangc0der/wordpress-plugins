@@ -1,0 +1,249 @@
+.mdfs-grid-2 {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 10px;
+    align-items: center;
+}
+.mdfs-row {
+    margin-bottom: 10px;
+}
+.mdfs-inline {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.mdfs-small {
+    color: #666;
+    font-size: 12px;
+}
+.mdfs-table-wrap {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+.mdfs-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 980px;
+}
+.mdfs-table th,
+.mdfs-table td {
+    border-bottom: 1px solid #eee;
+    padding: 6px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+.mdfs-table th {
+    background: #fafafa;
+    text-align: left;
+}
+
+.mdfs-table .mdfs-select {
+    min-width: 260px;
+}
+.mdfs-table input[type="number"] {
+    width: 90px;
+}
+.mdfs-table td[data-label="Quota"] input,
+.mdfs-table td[data-label="Còn lại"] input {
+    width: 70px;
+    text-align: center;
+}
+.mdfs-table td[data-label="Giá gốc"] input {
+    width: 80px;
+}
+.mdfs-table td[data-label="Giá KM"] input {
+    width: 100px;
+}
+.mdfs-table td[data-label="Badges"] input {
+    min-width: 120px;
+}
+
+.mdfs-actions .button {
+    margin: 0;
+    color: #fff;
+    background: #dc3545;
+    border: none;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+.mdfs-actions .button:hover {
+    background: #c82333;
+}
+
+@media (max-width: 782px) {
+    .mdfs-table {
+        min-width: 0;
+        border: 0;
+    }
+    .mdfs-table thead {
+        display: none;
+    }
+    .mdfs-table tbody {
+        display: block;
+    }
+    .mdfs-table tr.mdfs-row {
+        display: block;
+        border: 1px solid #e5e5e5;
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 12px;
+        background: #fff;
+    }
+    .mdfs-table td {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 0;
+        padding: 6px 0;
+        white-space: normal;
+    }
+    .mdfs-table td:before {
+        content: attr(data-label);
+        flex: 0 0 120px;
+        color: #666;
+        font-weight: 600;
+    }
+    .mdfs-table .mdfs-select {
+        min-width: 0;
+        width: 100%;
+    }
+    .mdfs-table input[type="number"],
+    .mdfs-table input[type="text"] {
+        width: 100%;
+    }
+}
+
+.mdfs-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.mdfs-table th,
+.mdfs-table td {
+    border-bottom: 1px solid #eee;
+    padding: 8px;
+}
+.mdfs-table th {
+    background: #fafafa;
+    text-align: left;
+}
+.mdfs-w80 {
+    width: 80px;
+}
+.mdfs-w100 {
+    width: 100px;
+}
+.mdfs-w120 {
+    width: 120px;
+}
+.mdfs-w140 {
+    width: 140px;
+}
+.mdfs-select {
+    min-width: 340px;
+}
+.mdfs-actions .button {
+    margin-right: 6px;
+}
+.mdfs-hint {
+    font-size: 12px;
+    color: #777;
+    margin: 6px 0;
+}
+
+#mdfs-product-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    z-index: 10000;
+}
+#mdfs-product-modal .mdfs-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+}
+#mdfs-product-modal .mdfs-modal-box {
+    position: relative;
+    width: 700px;
+    max-height: 80%;
+    margin: 50px auto;
+    background: #fff;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+#mdfs-product-modal .mdfs-modal-header,
+#mdfs-product-modal .mdfs-modal-footer {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+#mdfs-product-modal .mdfs-modal-footer {
+    border-top: 1px solid #eee;
+    border-bottom: 0;
+}
+#mdfs-product-modal .mdfs-modal-toolbar {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    gap: 10px;
+}
+#mdfs-product-modal .mdfs-modal-toolbar input,
+#mdfs-product-modal .mdfs-modal-toolbar select {
+    padding: 5px;
+}
+#mdfs-product-modal .mdfs-modal-content {
+    padding: 15px;
+    overflow-y: auto;
+    flex: 1;
+    max-height: 400px;
+}
+#mdfs-product-modal ul.mdfs-modal-products {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+#mdfs-product-modal ul.mdfs-modal-products li {
+    padding: 6px 0;
+    border-bottom: 1px solid #f1f1f1;
+}
+#mdfs-product-modal .mdfs-modal-pagination {
+    margin-top: 10px;
+    text-align: center;
+}
+#mdfs-product-modal .mdfs-modal-pagination a {
+    margin: 0 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: #f7f7f7;
+    color: #333;
+    text-decoration: none;
+}
+#mdfs-product-modal .mdfs-modal-pagination a.active {
+    background: #0073aa;
+    color: #fff;
+    font-weight: bold;
+}
+#mdfs-product-modal .mdfs-modal-pagination .dots {
+    margin: 0 4px;
+    color: #999;
+}
+#mdfs-product-modal .mdfs-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+.mdfs-select-all {
+    margin-bottom: 10px;
+}
