@@ -76,7 +76,7 @@ add_shortcode('md_flash_sale_shopee', function($atts=array()){
         if(empty($ids)) continue;
 
         $q = new WP_Query(array(
-          'post_type'      => 'product',
+          'post_type'      => array('product','product_variation'),
           'post__in'       => $ids,
           'orderby'        => 'post__in',
           'posts_per_page' => -1
@@ -92,6 +92,7 @@ add_shortcode('md_flash_sale_shopee', function($atts=array()){
             <div class="mdfs-track">
               <?php while($q->have_posts()): $q->the_post(); global $post;
                 $pobj = wc_get_product($post->ID);
+                if(!$pobj) continue;
                 $reg  = (float) $pobj->get_regular_price();
                 $sale = (float) ($pobj->get_sale_price()!=='' ? $pobj->get_sale_price() : $reg);
                 $disc = ($reg>0 && $sale<$reg) ? round((1-($sale/$reg))*100) : 0;
@@ -115,7 +116,10 @@ add_shortcode('md_flash_sale_shopee', function($atts=array()){
                 </div>
                 <div class="meta">
                   <div class="name"><?php the_title(); ?></div>
-                  <div class="price"><span class="sale"><?php echo wc_price($sale); ?></span><?php if($reg>$sale): ?><span class="reg"><?php echo wc_price($reg); ?></span><?php endif; ?></div>
+                  <div class="price">
+                    <span class="sale"><?php echo wc_price($sale); ?></span>
+                    <?php if($reg>$sale): ?><span class="reg"><?php echo wc_price($reg); ?></span><?php endif; ?>
+                  </div>
                 </div>
               </a>
               <?php endwhile; wp_reset_postdata(); ?>
@@ -126,6 +130,7 @@ add_shortcode('md_flash_sale_shopee', function($atts=array()){
           <div class="grid layout-<?php echo esc_attr($a['layout']); ?>" style="grid-template-columns:repeat(<?php echo intval($a['columns']); ?>,1fr)">
             <?php while($q->have_posts()): $q->the_post(); global $post;
               $pobj = wc_get_product($post->ID);
+              if(!$pobj) continue;
               $reg  = (float) $pobj->get_regular_price();
               $sale = (float) ($pobj->get_sale_price()!=='' ? $pobj->get_sale_price() : $reg);
               $disc = ($reg>0 && $sale<$reg) ? round((1-($sale/$reg))*100) : 0;
@@ -149,7 +154,10 @@ add_shortcode('md_flash_sale_shopee', function($atts=array()){
               </div>
               <div class="meta">
                 <div class="name"><?php the_title(); ?></div>
-                <div class="price"><span class="sale"><?php echo wc_price($sale); ?></span><?php if($reg>$sale): ?><span class="reg"><?php echo wc_price($reg); ?></span><?php endif; ?></div>
+                <div class="price">
+                  <span class="sale"><?php echo wc_price($sale); ?></span>
+                  <?php if($reg>$sale): ?><span class="reg"><?php echo wc_price($reg); ?></span><?php endif; ?>
+                </div>
               </div>
             </a>
             <?php endwhile; wp_reset_postdata(); ?>

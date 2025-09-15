@@ -32,39 +32,66 @@ jQuery(document).ready(function ($) {
 
     // Nút thêm sản phẩm
     $("#mdfs-add-row").on("click", function (e) {
-    e.preventDefault();
-    var idx = $("#mdfs-products-table tbody tr").length;
-    var tr = `
+        e.preventDefault();
+        var idx = $("#mdfs-products-table tbody tr").length;
+        var tr = `
     <tr class="mdfs-row">
-      <td data-label="Sản phẩm">
+      <td>
         <select class="mdfs-product-select mdfs-select" 
                 name="mdfs_products[${idx}][product_id]" 
                 data-placeholder="Gõ để tìm sản phẩm..."></select>
       </td>
-      <td data-label="Biến thể (ID)"><input type="number" class="small-text" name="mdfs_products[${idx}][variation_id]" value="0" min="0"/></td>
-      <td data-label="Giá KM"><input type="number" step="0.01" name="mdfs_products[${idx}][sale_price]" value=""/></td>
-      <td data-label="Giá gốc"><input type="number" step="0.01" name="mdfs_products[${idx}][regular_price]" value=""/></td>
-      <td data-label="Quota"><input type="number" name="mdfs_products[${idx}][quota]" value="0" min="0"/></td>
-      <td data-label="Còn lại"><input type="number" name="mdfs_remain_new[]" value="0" min="0" disabled/></td>
-      <td data-label="Badges"><input type="text" name="mdfs_products[${idx}][badges]" value="" placeholder="Mall|Yêu thích"/></td>
-      <td data-label="Thumbnail">
+      <td>
+        <input type="text" class="small-text" 
+               name="mdfs_products[${idx}][variation_id]" 
+               value="0" readonly/>
+      </td>
+      <td>
+        <input type="number" step="0.01" 
+               name="mdfs_products[${idx}][sale_price]" 
+               value=""/>
+      </td>
+      <td>
+        <input type="number" step="0.01" 
+               name="mdfs_products[${idx}][regular_price]" 
+               value="0" readonly/>
+      </td>
+      <td>
+        <input type="number" 
+               name="mdfs_products[${idx}][quota]" 
+               value="0" min="0"/>
+      </td>
+      <td>
+        <input type="number" 
+               name="mdfs_remain_new[]" 
+               value="0" min="0"/>
+      </td>
+      <td>
+        <input type="text" 
+               name="mdfs_products[${idx}][badges]" 
+               value="" placeholder="Mall|Yêu thích"/>
+      </td>
+      <td>
         <div class="mdfs-thumb-wrap">
             <input type="hidden" name="mdfs_products[${idx}][thumb]" class="mdfs-thumb" />
-            <img src="https://via.placeholder.com/60x60?text=+" class="mdfs-thumb-preview" style="width:60px;height:60px;object-fit:cover;border:1px solid #ddd;" />
+            <img src="https://via.placeholder.com/60x60?text=+" 
+                 class="mdfs-thumb-preview" 
+                 style="width:60px;height:60px;object-fit:cover;border:1px solid #ddd;" />
             <br/>
             <button type="button" class="button mdfs-upload-thumb">Tải ảnh lên</button>
             <button type="button" class="button mdfs-remove-thumb">Xóa</button>
         </div>
       </td>
-      <td class="mdfs-actions"><button type="button" class="button mdfs-remove">Xoá</button></td>
+      <td class="mdfs-actions">
+        <button type="button" class="button mdfs-remove">Xoá</button>
+      </td>
     </tr>`;
 
-    $("#mdfs-products-table tbody").append(tr);
+        $("#mdfs-products-table tbody").append(tr);
 
-    // ngay khi thêm dòng -> biến select thành select2
-    initSel($("#mdfs-products-table tbody tr:last .mdfs-product-select"));
-});
-
+        // Khởi tạo select2 cho select vừa thêm
+        initSel($("#mdfs-products-table tbody tr:last .mdfs-product-select"));
+    });
 
     // Nút xoá sản phẩm
     $("#mdfs-products-table").on("click", ".mdfs-remove", function () {
@@ -103,6 +130,9 @@ jQuery(document).ready(function ($) {
         var pid = $sel.val();
         if (!pid) return;
 
+        var $row = $sel.closest("tr");
+        var vid = $row.find('input[name*="[variation_id]"]').val() || 0;
+
         $.ajax({
             url: MDFS_ADMIN.ajax_url,
             type: "GET",
@@ -110,15 +140,29 @@ jQuery(document).ready(function ($) {
             data: {
                 action: "mdfs_get_product_price",
                 nonce: MDFS_ADMIN.nonce,
-                id: pid,
+                product_id: pid,
+                variation_id: vid,
             },
             success: function (res) {
                 if (res.success && res.data) {
-                    // tìm tới dòng hiện tại
-                    var $row = $sel.closest("tr");
-                    $row.find('input[name*="[regular_price]"]').val(res.data.regular_price || "");
-                    if (res.data.sale_price) {
-                        $row.find('input[name*="[sale_price]"]').val(res.data.sale_price);
+                    var d = res.data;
+
+                    // Gán lại biến thể ID (readonly)
+                    $row.find('input[name*="[variation_id]"]').val(d.variation_id || 0);
+
+                    // Gán lại giá gốc (readonly)
+                    $row.find('input[name*="[regular_price]"]').val(d.regular_price || "");
+
+                    // Nếu có giá KM thì fill, còn không giữ nguyên để admin nhập
+                    if (d.sale_price && d.sale_price !== "") {
+                        $row.find('input[name*="[sale_price]"]').val(d.sale_price);
+                    }
+
+                    // Nếu muốn lưu SKU (ẩn), bạn có thể thêm input hidden
+                    if ($row.find('input[name*="[sku]"]').length === 0) {
+                        $row.append('<input type="hidden" name="mdfs_products[' + $sel.index() + '][sku]" value="' + (d.sku || "") + '">');
+                    } else {
+                        $row.find('input[name*="[sku]"]').val(d.sku || "");
                     }
                 }
             },
@@ -134,27 +178,27 @@ jQuery(document).ready(function ($) {
         $("#mdfs-product-modal")
             .html(
                 `
-      <div class="mdfs-modal-overlay"></div>
-      <div class="mdfs-modal-box">
-        <div class="mdfs-modal-header">
-          <h3>Chọn sản phẩm</h3>
-          <button type="button" class="mdfs-close" id="mdfs-close-modal">×</button>
-        </div>
-        <div class="mdfs-modal-toolbar">
-          <input type="text" id="mdfs-modal-search" placeholder="Tìm sản phẩm...">
-          <select id="mdfs-modal-perpage">
-            <option value="10">10 / trang</option>
-            <option value="20">20 / trang</option>
-            <option value="50">50 / trang</option>
-          </select>
-        </div>
-        <div class="mdfs-modal-content"><p>Đang tải...</p></div>
-        <div class="mdfs-modal-footer">
-          <button type="button" class="button button-primary" id="mdfs-add-selected">Thêm vào</button>
-          <button type="button" class="button" id="mdfs-close-modal">Đóng</button>
-        </div>
-      </div>
-    `
+          <div class="mdfs-modal-overlay"></div>
+          <div class="mdfs-modal-box">
+            <div class="mdfs-modal-header">
+              <h3>Chọn sản phẩm</h3>
+              <button type="button" class="mdfs-close" id="mdfs-close-modal">×</button>
+            </div>
+            <div class="mdfs-modal-toolbar">
+              <input type="text" id="mdfs-modal-search" placeholder="Tìm sản phẩm...">
+              <select id="mdfs-modal-perpage">
+                <option value="10">10 / trang</option>
+                <option value="20">20 / trang</option>
+                <option value="50">50 / trang</option>
+              </select>
+            </div>
+            <div class="mdfs-modal-content"><p>Đang tải...</p></div>
+            <div class="mdfs-modal-footer">
+              <button type="button" class="button button-primary" id="mdfs-add-selected">Thêm vào</button>
+              <button type="button" class="button" id="mdfs-close-modal">Đóng</button>
+            </div>
+          </div>
+        `
             )
             .fadeIn();
 
@@ -214,31 +258,56 @@ jQuery(document).ready(function ($) {
         $("#mdfs-product-modal").fadeOut();
     });
 
-    // Thêm sản phẩm
     // Thêm sản phẩm từ modal xuống grid
-$(document).on('click','#mdfs-add-selected', function(){
-    $('#mdfs-product-modal .mdfs-modal-product:checked').each(function(){
-        var id   = $(this).val();
-        var name = $(this).data('name');
-        var price= $(this).data('price');
-        var idx  = $('#mdfs-products-table tbody tr').length;
+    $(document).on("click", "#mdfs-add-selected", function () {
+        $("#mdfs-product-modal .mdfs-modal-product:checked").each(function () {
+            var id = $(this).val(); // product_id
+            var name = $(this).data("name"); // label đã format: Tên – SKU (#id)
+            var price = $(this).data("price") || ""; // regular_price
+            var sale = $(this).data("sale") || ""; // sale_price
+            var vid = $(this).data("variation_id") || 0; // variation id
+            var idx = $("#mdfs-products-table tbody tr").length;
 
-        var tr = `
+            var tr = `
         <tr class="mdfs-row">
-          <td data-label="Sản phẩm">
+          <td>
             <select class="mdfs-product-select mdfs-select" 
-                    name="mdfs_products[${idx}][product_id]" 
+                    name="mdfs_products[${idx}][product_id]"
                     data-placeholder="Gõ để tìm sản phẩm...">
               <option value="${id}" selected>${name}</option>
             </select>
           </td>
-          <td data-label="Biến thể (ID)"><input type="number" class="small-text" name="mdfs_products[${idx}][variation_id]" value="0" min="0"/></td>
-          <td data-label="Giá KM"><input type="number" step="0.01" name="mdfs_products[${idx}][sale_price]" value=""/></td>
-          <td data-label="Giá gốc"><input type="number" step="0.01" name="mdfs_products[${idx}][regular_price]" value="${price}"/></td>
-          <td data-label="Quota"><input type="number" name="mdfs_products[${idx}][quota]" value="0"/></td>
-          <td data-label="Còn lại"><input type="number" name="mdfs_remain_new[]" value="0"/></td>
-          <td data-label="Badges"><input type="text" name="mdfs_products[${idx}][badges]" value=""/></td>
-          <td data-label="Thumbnail">
+          <td>
+            <input type="text" class="small-text"
+                   name="mdfs_products[${idx}][variation_id]"
+                   value="${vid}" readonly/>
+          </td>
+          <td>
+            <input type="number" step="0.01"
+                   name="mdfs_products[${idx}][sale_price]"
+                   value="${sale}"/>
+          </td>
+          <td>
+            <input type="number" step="0.01"
+                   name="mdfs_products[${idx}][regular_price]"
+                   value="${price}" readonly/>
+          </td>
+          <td>
+            <input type="number"
+                   name="mdfs_products[${idx}][quota]"
+                   value="0" min="0"/>
+          </td>
+          <td>
+            <input type="number"
+                   name="mdfs_remain_new[]"
+                   value="0" min="0"/>
+          </td>
+          <td>
+            <input type="text"
+                   name="mdfs_products[${idx}][badges]"
+                   value="" placeholder="Mall|Yêu thích"/>
+          </td>
+          <td>
             <div class="mdfs-thumb-wrap">
               <input type="hidden" name="mdfs_products[${idx}][thumb]" class="mdfs-thumb" />
               <img src="https://via.placeholder.com/60x60?text=+" class="mdfs-thumb-preview" style="width:60px;height:60px;object-fit:cover;border:1px solid #ddd;" />
@@ -250,13 +319,12 @@ $(document).on('click','#mdfs-add-selected', function(){
           <td class="mdfs-actions"><button type="button" class="button mdfs-remove">Xoá</button></td>
         </tr>`;
 
-        $('#mdfs-products-table tbody').append(tr);
+            $("#mdfs-products-table tbody").append(tr);
 
-        // gắn select2 cho select vừa thêm
-        initSel($('#mdfs-products-table tbody tr:last .mdfs-product-select'));
+            // Khởi tạo select2 cho select vừa thêm
+            initSel($("#mdfs-products-table tbody tr:last .mdfs-product-select"));
+        });
+
+        $("#mdfs-product-modal").fadeOut();
     });
-
-    $('#mdfs-product-modal').fadeOut();
-});
-
 });
