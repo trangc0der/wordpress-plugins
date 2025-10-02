@@ -217,7 +217,7 @@
   align-items:baseline;
 }
 .mdfs-shopee-bodies .card .price .sale {
-  color:var(--mdfs-accent);
+  color:var(--mdfs-accent) !important;
   font-weight:900;
 }
 .mdfs-shopee-bodies .card .price .reg {
@@ -225,3 +225,7 @@
   text-decoration:line-through;
   font-size:12px;
 }
+#mdfs-modal-perpage { padding:4px; }
+
+.woocommerce-variation-price {font-size:1.2rem;}
+

@@ -16,7 +16,7 @@ add_action('init', function(){ load_plugin_textdomain('mdfs-rt', false, dirname(
 $modules = array(
   'inc/compat.php','inc/helpers.php','admin/roles.php','admin/slots-cpt.php',
   'admin/csv.php','admin/system-status.php','public/shortcode-tabs.php','public/shortcode-shopee.php',
-  'public/shortcode-slider.php','public/dynamic-pricing.php','public/api.php',
+  'public/shortcode-slider.php','public/dynamic-pricing.php','inc/api.php',
   'inc/vendors.php','inc/abtest.php','inc/cron.php','inc/performance.php','inc/cli.php',
   'admin/reports-advanced.php','public/reports-rest.php','public/shortcode-campaign.php'
 );

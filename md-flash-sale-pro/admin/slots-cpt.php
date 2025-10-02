@@ -19,7 +19,34 @@ if (!class_exists('MDFS_RT_Slots_CPT')) {
             add_action('wp_ajax_mdfs_get_product_price', [$this, 'ajax_get_product_price']);
 
             add_action('wp_ajax_mdfs_load_products_modal', [$this, 'ajax_load_products_modal']);
+        }
 
+        private function get_sold_count($product_id)
+        {
+            global $wpdb;
+            $statuses = ['wc-completed', 'wc-processing'];
+            $placeholders = implode(',', array_fill(0, count($statuses), '%s'));
+
+            // Đếm cả product_id và variation_id
+            $sql = "
+        SELECT SUM(oim2.meta_value)
+        FROM {$wpdb->prefix}woocommerce_order_items oi
+        INNER JOIN {$wpdb->prefix}woocommerce_order_itemmeta oim_pid
+            ON oi.order_item_id = oim_pid.order_item_id AND oim_pid.meta_key = '_product_id'
+        INNER JOIN {$wpdb->prefix}woocommerce_order_itemmeta oim_vid
+            ON oi.order_item_id = oim_vid.order_item_id AND oim_vid.meta_key = '_variation_id'
+        INNER JOIN {$wpdb->prefix}woocommerce_order_itemmeta oim2
+            ON oi.order_item_id = oim2.order_item_id AND oim2.meta_key = '_qty'
+        INNER JOIN {$wpdb->posts} p
+            ON oi.order_id = p.ID
+        WHERE (oim_pid.meta_value = %d OR oim_vid.meta_value = %d)
+          AND p.post_status IN ($placeholders)
+    ";
+
+            $params = array_merge([$product_id, $product_id], $statuses);
+            $sold = (int) $wpdb->get_var($wpdb->prepare($sql, $params));
+
+            return $sold;
         }
 
         /** ----- CPT ----- */
@@ -81,11 +108,11 @@ if (!class_exists('MDFS_RT_Slots_CPT')) {
             $plugin_url = plugin_dir_url(dirname(__FILE__)); // lấy URL plugin gốc
 
             if (!wp_style_is('select2', 'enqueued')) {
-    wp_enqueue_style('select2', $plugin_url . 'assets/css/select2.css', [], '1.0');
-}
-if (!wp_script_is('select2', 'enqueued')) {
-    wp_enqueue_script('select2', $plugin_url . 'assets/js/select2.full.min.js', ['jquery'], '1.0', true);
-}
+                wp_enqueue_style('select2', $plugin_url . 'assets/css/select2.css', [], '1.0');
+            }
+            if (!wp_script_is('select2', 'enqueued')) {
+                wp_enqueue_script('select2', $plugin_url . 'assets/js/select2.full.min.js', ['jquery'], '1.0', true);
+            }
 
             // CSS riêng cho admin
             wp_enqueue_style('mdfs-admin', $plugin_url . 'assets/slots-cpt.css', [], '1.0');
@@ -124,23 +151,23 @@ if (!wp_script_is('select2', 'enqueued')) {
             $from = (int) get_post_meta($post->ID, '_mdfs_time_from', true);
             $to = (int) get_post_meta($post->ID, '_mdfs_time_to', true);
             $limit = (int) get_post_meta($post->ID, '_mdfs_limit_per_customer', true);
+            $type = get_post_meta($post->ID, '_mdfs_type', true);
+            $cols = (int) get_post_meta($post->ID, '_mdfs_cols', true);
+            $view_all = (string) get_post_meta($post->ID, '_mdfs_view_all', true);
+            $only_instock = (int) get_post_meta($post->ID, '_mdfs_only_instock', true);
+            $hide_oos = (int) get_post_meta($post->ID, '_mdfs_hide_oos', true);
+            $test_mode = (int) get_post_meta($post->ID, '_mdfs_test_mode', true);
+            $ab_group = get_post_meta($post->ID, '_mdfs_ab_group', true);
+
             if (!$limit) {
                 $limit = 0;
             }
-
-            $type = get_post_meta($post->ID, '_mdfs_type', true);
             if (!$type) {
                 $type = 'slider';
             }
-            $cols = (int) get_post_meta($post->ID, '_mdfs_cols', true);
             if (!$cols) {
                 $cols = 6;
             }
-
-            $view_all = (string) get_post_meta($post->ID, '_mdfs_view_all', true);
-            $only_instock = (int) get_post_meta($post->ID, '_mdfs_only_instock', true);
-            $test_mode = (int) get_post_meta($post->ID, '_mdfs_test_mode', true);
-            $ab_group = get_post_meta($post->ID, '_mdfs_ab_group', true);
             if (!$ab_group) {
                 $ab_group = 'A';
             }
@@ -187,6 +214,12 @@ if (!wp_script_is('select2', 'enqueued')) {
     </div>
     <div class="mdfs-row">
       <label class="mdfs-inline">
+        <input type="checkbox" name="mdfs_hide_oos" value="1" <?php checked($hide_oos, 1); ?> />
+        <span><?php _e('Ẩn sản phẩm khi quota = 0', 'mdfs-rt'); ?></span>
+      </label>
+    </div>
+    <div class="mdfs-row">
+      <label class="mdfs-inline">
         <input type="checkbox" name="mdfs_test_mode" value="1" <?php checked($test_mode, 1); ?> />
         <span><?php _e('Test mode (chỉ admin/QA nhìn thấy)', 'mdfs-rt'); ?></span>
       </label>
@@ -208,11 +241,9 @@ if (!wp_script_is('select2', 'enqueued')) {
             if (!is_array($rows)) {
                 $rows = [];
             }
-
-            $remain_map = (array) get_post_meta($post->ID, '_mdfs_quota_remaining', true);
             ?>
     <div class="mdfs-hint">
-      <?php _e('Chọn sản phẩm/biến thể, nhập Giá KM, Quota & số lượng Còn lại. Trường Giá gốc & ID biến thể sẽ tự động lấy từ sản phẩm và không cho chỉnh tay.', 'mdfs-rt'); ?>
+      <?php _e('Chọn sản phẩm/biến thể, nhập Giá KM, Quota. Trường Giá gốc & ID biến thể tự động lấy từ sản phẩm. "Đã bán" và "Còn lại" tính theo đơn hàng thành công.', 'mdfs-rt'); ?>
     </div>
     <p>
       <button type="button" class="button button-secondary" id="mdfs-open-product-modal">
@@ -230,6 +261,7 @@ if (!wp_script_is('select2', 'enqueued')) {
             <th class="mdfs-w100"><?php _e('Giá KM', 'mdfs-rt'); ?></th>
             <th class="mdfs-w80"><?php _e('Giá gốc', 'mdfs-rt'); ?></th>
             <th class="mdfs-w80"><?php _e('Quota', 'mdfs-rt'); ?></th>
+            <th class="mdfs-w80"><?php _e('Đã bán', 'mdfs-rt'); ?></th>
             <th class="mdfs-w80"><?php _e('Còn lại', 'mdfs-rt'); ?></th>
             <th class="mdfs-w100"><?php _e('Badges', 'mdfs-rt'); ?></th>
             <th class="mdfs-w100"><?php _e('Thumbnail', 'mdfs-rt'); ?></th>
@@ -244,7 +276,7 @@ if (!wp_script_is('select2', 'enqueued')) {
                 'variation_id' => 0,
                 'sale_price' => '',
                 'regular_price' => '',
-                'quota' => '',
+                'quota' => 0,
                 'badges' => '',
                 'thumb' => '',
             ];
@@ -255,44 +287,20 @@ if (!wp_script_is('select2', 'enqueued')) {
             $pid = (int) ($r['product_id'] ?? 0);
             $vid = (int) ($r['variation_id'] ?? 0);
 
-            // Tạo text hiển thị chuẩn
-            $text = '';
-            if ($vid) {
-                $product = wc_get_product($vid);
-                if ($product) {
-                    $parent = wc_get_product($product->get_parent_id());
-                    $parent_name = $parent ? $parent->get_name() : '';
-                    $sku = $product->get_sku();
-                    $text = $parent_name;
-                    if ($sku) {
-                        $text .= ' – ' . $sku;
-                    }
-                    $text .= ' (#' . $product->get_id() . ')';
-                }
-            } elseif ($pid) {
-                $product = wc_get_product($pid);
-                if ($product) {
-                    $sku = $product->get_sku();
-                    $text = $product->get_name();
-                    if ($sku) {
-                        $text .= ' – ' . $sku;
-                    }
-                    $text .= ' (#' . $product->get_id() . ')';
-                }
-            }
+            $product = $vid ? wc_get_product($vid) : ($pid ? wc_get_product($pid) : null);
+            $title = $product ? $product->get_name() : '';
 
-            // tồn kho riêng
-            $keyRemain = $vid ? $pid . ':' . $vid : (string) $pid;
-            $remainVal = isset($remain_map[$keyRemain]) ? (int) $remain_map[$keyRemain] : (int) ($r['quota'] ?? 0);
+            $quota = (int) ($r['quota'] ?? 0);
+            $sold = $product ? $this->get_sold_count($product->get_id()) : 0;
+            $remain = max(0, $quota - $sold);
             ?>
             <tr class="mdfs-row">
               <td>
                 <select class="mdfs-product-select mdfs-select"
-                        name="mdfs_products[<?php echo esc_attr($i); ?>][product_id]"
-                        data-placeholder="<?php esc_attr_e('Gõ để tìm sản phẩm...', 'mdfs-rt'); ?>">
+                        name="mdfs_products[<?php echo esc_attr($i); ?>][product_id]">
                   <?php if ($pid): ?>
                     <option value="<?php echo esc_attr($pid); ?>" selected="selected">
-                      <?php echo esc_html($text ?: '#' . $pid); ?>
+                      <?php echo esc_html($title ?: '#' . $pid); ?>
                     </option>
                   <?php endif; ?>
                 </select>
@@ -315,34 +323,32 @@ if (!wp_script_is('select2', 'enqueued')) {
               <td>
                 <input type="number"
                        name="mdfs_products[<?php echo esc_attr($i); ?>][quota]"
-                       value="<?php echo esc_attr($r['quota'] ?? ''); ?>" min="0"/>
+                       value="<?php echo esc_attr($quota); ?>" min="0"/>
               </td>
               <td>
-                <input type="number"
-                       name="mdfs_remain[<?php echo esc_attr($keyRemain); ?>]"
-                       value="<?php echo esc_attr($remainVal); ?>" min="0"/>
+                <input type="number" value="<?php echo esc_attr($sold); ?>" readonly/>
+              </td>
+              <td>
+                <input type="number" value="<?php echo esc_attr($remain); ?>" readonly/>
               </td>
               <td>
                 <input type="text"
                        name="mdfs_products[<?php echo esc_attr($i); ?>][badges]"
-                       value="<?php echo esc_attr($r['badges'] ?? ''); ?>"
-                       placeholder="<?php esc_attr_e('ví dụ: Mall|Yêu thích', 'mdfs-rt'); ?>" />
+                       value="<?php echo esc_attr($r['badges'] ?? ''); ?>" />
               </td>
               <td>
                 <div class="mdfs-thumb-wrap">
                   <input type="hidden"
                          name="mdfs_products[<?php echo esc_attr($i); ?>][thumb]"
-                         class="mdfs-thumb"
                          value="<?php echo esc_attr($r['thumb'] ?? ''); ?>" />
-                  <img src="<?php echo !empty($r['thumb']) ? esc_url($r['thumb']) : 'https://via.placeholder.com/60x60?text=+'; ?>"
-                       class="mdfs-thumb-preview"
-                       style="width:60px;height:60px;object-fit:cover;border:1px solid #ddd;" />
+                  <img src="<?php echo !empty($r['thumb']) ? esc_url($r['thumb']) : '/wp-content/uploads/2025/09/image-not-found.png'; ?>"
+                        class="mdfs-thumb-preview" style="width:60px;height:60px;object-fit:cover;border:1px solid #ddd;" />
                   <br/>
                   <button type="button" class="button mdfs-upload-thumb"><?php _e('Tải ảnh lên', 'mdfs-rt'); ?></button>
-                  <button type="button" class="button mdfs-remove-thumb"><?php _e('Xóa', 'mdfs-rt'); ?></button>
+                  <button type="button" class="button mdfs-remove-thumb"><?php _e('Xóa Ảnh', 'mdfs-rt'); ?></button>
                 </div>
               </td>
-              <td class="mdfs-actions">
+              <td>
                 <button type="button" class="button mdfs-remove"><?php _e('Xoá', 'mdfs-rt'); ?></button>
               </td>
             </tr>
@@ -479,45 +485,84 @@ if (!wp_script_is('select2', 'enqueued')) {
                 return;
             }
 
-            // time
+            // --- TIME ---
             $from = isset($_POST['mdfs_time_from']) ? sanitize_text_field($_POST['mdfs_time_from']) : '';
             $to = isset($_POST['mdfs_time_to']) ? sanitize_text_field($_POST['mdfs_time_to']) : '';
             $from_ts = $from ? strtotime($from) : 0;
             $to_ts = $to ? strtotime($to) : 0;
+
             update_post_meta($post_id, '_mdfs_time_from', $from_ts);
             update_post_meta($post_id, '_mdfs_time_to', $to_ts);
 
+            // --- OPTIONS ---
             update_post_meta($post_id, '_mdfs_limit_per_customer', (int) ($_POST['mdfs_limit_per_customer'] ?? 0));
             update_post_meta($post_id, '_mdfs_type', sanitize_text_field($_POST['mdfs_type'] ?? 'slider'));
             update_post_meta($post_id, '_mdfs_cols', (int) ($_POST['mdfs_cols'] ?? 6));
             update_post_meta($post_id, '_mdfs_view_all', esc_url_raw($_POST['mdfs_view_all'] ?? ''));
             update_post_meta($post_id, '_mdfs_only_instock', isset($_POST['mdfs_only_instock']) ? 1 : 0);
+            update_post_meta($post_id, '_mdfs_hide_oos', isset($_POST['mdfs_hide_oos']) ? 1 : 0); // ✅ mới thêm
             update_post_meta($post_id, '_mdfs_test_mode', isset($_POST['mdfs_test_mode']) ? 1 : 0);
             update_post_meta($post_id, '_mdfs_ab_group', sanitize_text_field($_POST['mdfs_ab_group'] ?? 'A'));
 
-            // voucher/combo
+            // --- VOUCHER / COMBO ---
             update_post_meta($post_id, '_mdfs_voucher', sanitize_text_field($_POST['mdfs_voucher'] ?? ''));
             update_post_meta($post_id, '_mdfs_combo', wp_kses_post($_POST['mdfs_combo'] ?? ''));
 
-            // thumbnail
+            // --- THUMBNAIL ---
             update_post_meta($post_id, '_mdfs_thumbnail_id', (int) ($_POST['mdfs_thumbnail_id'] ?? 0));
 
-            // editor content
+            // --- EDITOR CONTENT ---
             if (isset($_POST['mdfs_content'])) {
                 update_post_meta($post_id, '_mdfs_content', wp_kses_post(wp_unslash($_POST['mdfs_content'])));
             }
 
-            // products
+            // --- PRODUCTS ---
             $rows = [];
             if (isset($_POST['mdfs_products']) && is_array($_POST['mdfs_products'])) {
+                global $wpdb;
+
                 foreach ($_POST['mdfs_products'] as $r) {
                     $pid = isset($r['product_id']) ? (int) $r['product_id'] : 0;
+                    $vid = isset($r['variation_id']) ? (int) $r['variation_id'] : 0;
                     if (!$pid) {
                         continue;
                     }
+
+                    // --- Check conflict slot ---
+                    $search_id = $vid ?: $pid;
+                    $pattern = $vid ? '%"variation_id";i:' . $vid . '%' : '%"product_id";i:' . $pid . '%';
+
+                    $conflict = $wpdb->get_var(
+                        $wpdb->prepare(
+                            "SELECT p.ID
+                     FROM {$wpdb->posts} p
+                     INNER JOIN {$wpdb->postmeta} pm1 ON pm1.post_id = p.ID AND pm1.meta_key = '_mdfs_time_from'
+                     INNER JOIN {$wpdb->postmeta} pm2 ON pm2.post_id = p.ID AND pm2.meta_key = '_mdfs_time_to'
+                     INNER JOIN {$wpdb->postmeta} pm3 ON pm3.post_id = p.ID AND pm3.meta_key = '_mdfs_products'
+                     WHERE p.post_type = 'mdfs_slot'
+                       AND p.post_status = 'publish'
+                       AND p.ID != %d
+                       AND pm1.meta_value < %d
+                       AND pm2.meta_value > %d
+                       AND pm3.meta_value LIKE %s
+                     LIMIT 1",
+                            $post_id,
+                            $to_ts,
+                            $from_ts,
+                            $pattern
+                        )
+                    );
+
+                    if ($conflict) {
+                        $product = wc_get_product($vid ?: $pid);
+                        $name = $product ? $product->get_name() : '#' . $search_id;
+                        wp_die(sprintf(__('Sản phẩm "%s" (ID %d) đã tham gia một chương trình Flash Sale khác trong cùng khung giờ.', 'mdfs-rt'), esc_html($name), $search_id), __('Lỗi lưu Flash Sale', 'mdfs-rt'), ['back_link' => true]);
+                    }
+
+                    // --- Save product data ---
                     $rows[] = [
                         'product_id' => $pid,
-                        'variation_id' => isset($r['variation_id']) ? (int) $r['variation_id'] : 0,
+                        'variation_id' => $vid,
                         'sale_price' => isset($r['sale_price']) ? wc_format_decimal($r['sale_price']) : '',
                         'regular_price' => isset($r['regular_price']) ? wc_format_decimal($r['regular_price']) : '',
                         'quota' => isset($r['quota']) ? (int) $r['quota'] : 0,
@@ -527,21 +572,6 @@ if (!wp_script_is('select2', 'enqueued')) {
                 }
             }
             update_post_meta($post_id, '_mdfs_products', $rows);
-
-            // remain map (key: pid or pid:vid)
-            $remain_map = [];
-            if (isset($_POST['mdfs_remain']) && is_array($_POST['mdfs_remain'])) {
-                foreach ($_POST['mdfs_remain'] as $k => $v) {
-                    $remain_map[sanitize_text_field($k)] = (int) $v;
-                }
-            } else {
-                // tạo map mặc định nếu chưa có
-                foreach ($rows as $r) {
-                    $key = $r['variation_id'] ? $r['product_id'] . ':' . $r['variation_id'] : (string) $r['product_id'];
-                    $remain_map[$key] = (int) $r['quota'];
-                }
-            }
-            update_post_meta($post_id, '_mdfs_quota_remaining', $remain_map);
         }
 
         /** ----- AJAX product search (select2) ----- */
